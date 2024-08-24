@@ -11,12 +11,13 @@
         <field name="model">estate_property</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name" string="Title" />
+                <field name="name" string="Title"/>
                 <field name="postcode"/>
                 <field name="expected_price"/>
                 <field name="bedrooms"/>
                 <field name="living_area"/>
                 <field name="facades"/>
+                <field name="property_type_id"/>
                 <filter string="Available" name="inAvailable" domain="['|',
                                                                             ('state', '=', 'new'),
                                                                             ('state', '=', 'offer accepted')]"/>
@@ -39,11 +40,12 @@
                 <field name="expected_price"/>
                 <field name="selling_price"/>
                 <field name="date_availability" string="Available From"/>
+                <field name="property_type_id"/>
             </tree>
         </field>
     </record>
 
-    <record id="crm_lost_reason_view_form" model="ir.ui.view">
+    <record id="estate_property_view_form" model="ir.ui.view">
         <field name="name">estate_property.form</field>
         <field name="model">estate_property</field>
         <field name="arch" type="xml">
@@ -53,7 +55,11 @@
                         <field name="name" class="mb16"/>
                     </h1>
                     <group>
+                        <field name="tag_ids" widget="many2many_tags"/>
+                    </group>
+                    <group>
                         <group>
+                            <field name="property_type_id"/>
                             <field name="postcode"/>
                             <field name="date_availability" string="Available From"/>
                         </group>
@@ -74,6 +80,16 @@
                                 <field name="garden_area"/>
                                 <field name="garden_orientation"/>
                                 <field name="state"/>
+                                <field name="property_type_id"/>
+                            </group>
+                        </page>
+                        <page string="Offers">
+                            <field name="offer_ids" mode="tree" context="{'default_property_id': active_id}" options="{'tree_view_ref': 'estate_property_offer'}"/>
+                        </page>
+                        <page string="Other Info">
+                            <group>
+                                <field name="buyer_id"/>
+                                <field name="salesman_id"/>
                             </group>
                         </page>
                     </notebook>
