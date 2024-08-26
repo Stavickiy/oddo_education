@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import fields, models
+from odoo import fields, models, api
 from dateutil.relativedelta import relativedelta
 
 class EstateProperty(models.Model):
@@ -26,6 +26,8 @@ class EstateProperty(models.Model):
     garage = fields.Boolean()
     garden = fields.Boolean()
     garden_area = fields.Integer()
+    total_area = fields.Integer(compute="_compute_total")
+    best_price = fields.Float(compute="_compute_best_offer_price")
     garden_orientation = fields.Selection(selection=[
         ("north", "North"),
         ("south", "South"),
@@ -39,3 +41,23 @@ class EstateProperty(models.Model):
         ("sold", "Sold"),
         ("canceled", "Canceled")
     ], default="new")
+
+    @api.depends('living_area', 'garden_area')
+    def _compute_total(self):
+        for record in self:
+            record.total_area =  record.living_area + record.garden_area
+
+    @api.depends('offer_ids.price')
+    def _compute_best_offer_price(self):
+        for record in self:
+            record.best_price = max(record.mapped('offer_ids.price'))
+
+
+    @api.onchange("garden")
+    def _onchange(self):
+        if self.garden:
+            self.garden_area = 1000
+            self.garden_orientation = "north"
+        else:
+            self.garden_area = 0
+            self.garden_orientation = None
