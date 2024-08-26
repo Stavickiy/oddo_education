@@ -50,12 +50,16 @@
         <field name="model">estate_property</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_sold_property" type="object" string="SOLD"/>
+                    <button name="action_cancel_property" type="object" string="CANCEL"/>
+                </header>
                 <sheet>
                     <h1 class="mb32">
                         <field name="name" class="mb16"/>
                     </h1>
                     <group>
-                        <field name="tag_ids" widget="many2many_tags"/>
+                        <field name="state"/>
                     </group>
                     <group>
                         <group>

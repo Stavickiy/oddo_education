@@ -3,6 +3,7 @@
 from dateutil.relativedelta import relativedelta
 
 from odoo import fields, models, api
+from odoo.exceptions import UserError
 
 
 class EstatePropertyOffer(models.Model):
@@ -11,7 +12,7 @@ class EstatePropertyOffer(models.Model):
 
     price = fields.Float()
     status = fields.Selection(copy=False, selection=[
-        ('Accepted', 'Accepted'),
+        ('accepted', 'Accepted'),
         ('refused', 'Refused')
     ])
     partner_id = fields.Many2one('res.partner', string='Partners', equired=True)
@@ -32,3 +33,32 @@ class EstatePropertyOffer(models.Model):
         for record in self:
             if record.date_deadline and (record.date_deadline - record.create_date).days != record.validity:
                 record.validity = (record.date_deadline - record.create_date).days
+
+
+    def action_confirm_offer(self):
+        for record in self:
+            if record.status == 'refused':
+                raise UserError("A refused offer cannot be accepted!")
+            elif record.property_id.state == 'sold':
+                raise UserError("The property has already been sold!")
+            else:
+                for offer in record.property_id.offer_ids:
+                    if record != offer:
+                        offer.status = "refused"
+                record.status = "accepted"
+                record.property_id.state = "sold"
+                record.property_id.buyer_id = record.partner_id
+                record.property_id.selling_price = record.price
+                return True
+
+
+    def action_refuse_offer(self):
+        for record in self:
+            if record.status == "accepted":
+                raise UserError("A accepted offer cannot be refused!")
+            elif record.status == "refused":
+                raise UserError("The offer has already been refused!")
+            else:
+                record.status = "refused"
+                return True
+

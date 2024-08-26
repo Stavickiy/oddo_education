@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import fields, models, api
+from odoo import fields, models, api, _
 from dateutil.relativedelta import relativedelta
+
+from odoo.exceptions import UserError
+
 
 class EstateProperty(models.Model):
     _name = "estate_property"
@@ -26,7 +29,7 @@ class EstateProperty(models.Model):
     garage = fields.Boolean()
     garden = fields.Boolean()
     garden_area = fields.Integer()
-    total_area = fields.Integer(compute="_compute_total")
+    total_area = fields.Integer(compute="_compute_total_area")
     best_price = fields.Float(compute="_compute_best_offer_price")
     garden_orientation = fields.Selection(selection=[
         ("north", "North"),
@@ -43,14 +46,18 @@ class EstateProperty(models.Model):
     ], default="new")
 
     @api.depends('living_area', 'garden_area')
-    def _compute_total(self):
+    def _compute_total_area(self):
         for record in self:
             record.total_area =  record.living_area + record.garden_area
 
     @api.depends('offer_ids.price')
     def _compute_best_offer_price(self):
         for record in self:
-            record.best_price = max(record.mapped('offer_ids.price'))
+            offers = record.mapped('offer_ids.price')
+            if offers:
+                record.best_price = max(offers)
+            else:
+                record.best_price = 0
 
 
     @api.onchange("garden")
@@ -61,3 +68,21 @@ class EstateProperty(models.Model):
         else:
             self.garden_area = 0
             self.garden_orientation = None
+
+
+    def action_sold_property(self):
+        for record in self:
+            if record.state != "canceled":
+                record.state = "sold"
+                return True
+            else:
+                raise UserError(_("A canceled property cannot be sold!"))
+
+
+    def action_cancel_property(self):
+        for record in self:
+            if record.state != "sold":
+                record.state = "canceled"
+                return True
+            else:
+                raise UserError(_("A sold property cannot be canceled!"))
