@@ -9,6 +9,7 @@ from odoo.exceptions import UserError
 class EstatePropertyOffer(models.Model):
     _name = 'estate.property.offer'
     _description = "Estate Property Offer"
+    _order = "id desc"
 
     price = fields.Float()
     status = fields.Selection(copy=False, selection=[
@@ -17,6 +18,7 @@ class EstatePropertyOffer(models.Model):
     ])
     partner_id = fields.Many2one('res.partner', string='Partners', required=True)
     property_id = fields.Many2one('estate_property', required=True)
+    property_type_id = fields.Many2one(related='property_id.property_type_id', string='Property Type', store=True)
     create_date = fields.Date(copy=False, default=fields.Date.today())
     validity = fields.Integer(default=7)
     date_deadline = fields.Date(compute='_compute_deadline_date', inverse='_inverse_validity_days')
@@ -50,7 +52,7 @@ class EstatePropertyOffer(models.Model):
                     if record != offer:
                         offer.status = "refused"
                 record.status = "accepted"
-                record.property_id.state = "sold"
+                record.property_id.state = "offer accepted"
                 record.property_id.buyer_id = record.partner_id
                 record.property_id.selling_price = record.price
                 return True
@@ -65,4 +67,3 @@ class EstatePropertyOffer(models.Model):
             else:
                 record.status = "refused"
                 return True
-

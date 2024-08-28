@@ -12,6 +12,7 @@ from odoo.tools import float_compare, float_is_zero
 class EstateProperty(models.Model):
     _name = "estate_property"
     _description = "Estate model"
+    _order = "id desc"
 
     name = fields.Char(required=True)
     property_type_id = fields.Many2one("estate.property.type")
@@ -45,7 +46,7 @@ class EstateProperty(models.Model):
         ("offer accepted", "Offer Accepted"),
         ("sold", "Sold"),
         ("canceled", "Canceled")
-    ], default="new")
+    ], default="new", compute="_compute_state", store=True)
 
     _sql_constraints = [
         ('check_expected_price', 'CHECK(expected_price > 0)',
@@ -96,7 +97,7 @@ class EstateProperty(models.Model):
             else:
                 raise UserError(_("A sold property cannot be canceled!"))
 
-    @api.constrains('selling_price')
+    @api.constrains('selling_price', 'expected_price')
     def _check_selling_price(self):
         for record in self:
             if not float_is_zero(record.selling_price, precision_rounding=0.01):
@@ -104,3 +105,14 @@ class EstateProperty(models.Model):
                     raise ValidationError(
                         "The selling price cannot be lower than 90% of the expected price!"
                     )
+
+    @api.depends('offer_ids', 'offer_ids.status')
+    def _compute_state(self):
+        for record in self:
+            if record.state == 'new':
+                if len(record.offer_ids) and \
+                        any(offer.status != 'refused' for offer in record.offer_ids):
+                    record.state = 'offer received'
+            elif record.state == 'offer received' and \
+                    all(offer.status != 'refused' for offer in record.offer_ids):
+                record.state = 'new'
