@@ -8,7 +8,6 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, float_is_zero
 
 
-
 class EstateProperty(models.Model):
     _name = "estate_property"
     _description = "Estate model"
@@ -46,7 +45,7 @@ class EstateProperty(models.Model):
         ("offer accepted", "Offer Accepted"),
         ("sold", "Sold"),
         ("canceled", "Canceled")
-    ], default="new", compute="_compute_state", store=True)
+    ], default="new", readonly=True)
 
     _sql_constraints = [
         ('check_expected_price', 'CHECK(expected_price > 0)',
@@ -58,7 +57,7 @@ class EstateProperty(models.Model):
     @api.depends('living_area', 'garden_area')
     def _compute_total_area(self):
         for record in self:
-            record.total_area =  record.living_area + record.garden_area
+            record.total_area = record.living_area + record.garden_area
 
     @api.depends('offer_ids.price')
     def _compute_best_offer_price(self):
@@ -69,7 +68,6 @@ class EstateProperty(models.Model):
             else:
                 record.best_price = 0
 
-
     @api.onchange("garden")
     def _onchange(self):
         if self.garden:
@@ -79,7 +77,6 @@ class EstateProperty(models.Model):
             self.garden_area = 0
             self.garden_orientation = None
 
-
     def action_sold_property(self):
         for record in self:
             if record.state != "canceled":
@@ -87,7 +84,6 @@ class EstateProperty(models.Model):
                 return True
             else:
                 raise UserError(_("A canceled property cannot be sold!"))
-
 
     def action_cancel_property(self):
         for record in self:
@@ -106,13 +102,8 @@ class EstateProperty(models.Model):
                         "The selling price cannot be lower than 90% of the expected price!"
                     )
 
-    @api.depends('offer_ids', 'offer_ids.status')
-    def _compute_state(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_active_user(self):
         for record in self:
-            if record.state == 'new':
-                if len(record.offer_ids) and \
-                        any(offer.status != 'refused' for offer in record.offer_ids):
-                    record.state = 'offer received'
-            elif record.state == 'offer received' and \
-                    all(offer.status != 'refused' for offer in record.offer_ids):
-                record.state = 'new'
+            if record.state not in ['new', 'canceled']:
+                raise UserError(f"Property '{record.state}' can't be deleted!")
