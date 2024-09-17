@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="hospital_management_menu_root" name="Hospital">
+        <menuitem id="hospital_management_patient_menu" name="Patients" action="hospital_management_patient_action">
+        </menuitem>
+        <menuitem id="hospital_management_doctor_menu" name="Doctors" action="hospital_management_doctor_action">
+        </menuitem>
+        <menuitem id="hospital_management_disease_directory_menu" name="Disease Directory">
+            <menuitem id="hospital_management_disease_directory_menu_action" action="hospital_management_disease_directory_action"/>
+            <menuitem id="hospital_management_disease_type_menu_action" action="hospital_management_disease_type_action"/>
+        </menuitem>
+    </menuitem>
+</odoo>
